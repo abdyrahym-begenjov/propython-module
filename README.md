@@ -8,8 +8,8 @@ ProPython is a minimalist Python module for quickly writing and reading data in 
 * Security: Basic exception handling is built in for cases where the file is not found or the extension is invalid.
 * Requirements: Python 3.10+ (uses the match-case operator).
 
-#Файловая утилита ProPython 🐍
-#Русский
+# Файловая утилита ProPython 🐍
+# Русский
 **ProPython** — это минималистичный Python-модуль для быстрой записи и чтения данных в форматах **TXT**, **JSON** и **PICKLE**. Он избавляет от написания повторяющегося контекстного кода with open(...) и автоматически обрабатывает расширения файлов.
 ## Основные возможности
  * **Универсальное чтение (pyread):** Автоматически определяет формат файла по расширению и возвращает обработанные данные (строку, словарь/список или объект Python).
