@@ -1,7 +1,15 @@
 import json
 import pickle
+from collections import deque
+from pandas import read_csv, concat, DataFrame
+from inspect import signature
 
-def pyread(filename, encoding='utf-8', as_list=False):
+data_structures=(list, tuple, set, frozenset, deque)
+data_types=(str, int, float, bool)
+csvread_parameters=[i for i in signature(read_csv).parameters]
+csvrewrite_parameters=[i for i in signature(DataFrame.to_csv).parameters]
+
+def pyread(filename, encoding='utf-8', as_list=False, **kwargs):
     match filename:
         case filename if filename.endswith('.txt'):
             with open(filename, 'r', encoding=encoding) as file:
@@ -13,33 +21,41 @@ def pyread(filename, encoding='utf-8', as_list=False):
         case filename if filename.endswith('.pickle'):
             with open(filename, 'rb') as file:
                 return pickle.load(file)
+        case filename if filename.endswith('.csv'):
+            return read_csv(filename, encoding=encoding, **kwargs)
         case _:
             raise ValueError('Unsupported File!!!')
         
-def pyadd(filename, value, encoding='utf-8'):
+def pyadd(filename, value, encoding='utf-8', **kwargs):
     match filename:
         case filename if filename.endswith('.txt'):
             with open(filename, 'a', encoding=encoding) as file:
                 match value:
-                    case value if type(value) in (str, int, float, bool):
+                    case value if type(value) in data_types:
                         file.write(value)
                     case _:
                         file.writelines(value)
         case filename if filename.endswith(('.json', '.pickle')):
-            file=pyread(filename)
+            file=pyread(filename, encoding=encoding)
             file=pyupdate(file, value)
-            pywrite(filename, file)
+            pyrewrite(filename, file)
+        case filename if filename.endswith('.csv'):
+            kw1={i: j for i, j in kwargs.items() if i in csvread_parameters}
+            file=pyread(filename, encoding=encoding, **kw1)
+            file=concat([file, value])
+            kw2={i: j for i, j in kwargs.items() if i in csvrewrite_parameters}
+            pyrewrite(filename, file, **kw2)
         case _:
             raise ValueError('Unsupported File!!!')
         
 def pyupdate(d1, d2):
     for i in d2:
         if i in d1:
-            if isinstance(d1[i], list) and isinstance(d2[i], list):
+            if isinstance(d1[i], data_structures) and isinstance(d2[i], data_structures):
                 d1[i]=d1[i]+d2[i]
-            elif isinstance(d1[i], list) and isinstance(d2[i], (str, int, float, bool)):
+            elif isinstance(d1[i], data_structures) and isinstance(d2[i], data_types):
                 d1[i].append(d2[i])
-            elif isinstance(d1[i], (str, int, float, bool)) and isinstance(d2[i], list):
+            elif isinstance(d1[i], data_types) and isinstance(d2[i], data_structures):
                 d1[i]=[d1[i]]
                 d1[i].extend(d2[i])
             elif isinstance(d1[i], dict) and isinstance(d2[i], dict):
@@ -50,12 +66,12 @@ def pyupdate(d1, d2):
             d1[i]=d2[i]
     return d1
                      
-def pywrite(filename, value, encoding='utf-8'):
+def pyrewrite(filename, value, encoding='utf-8', **kwargs):
     match filename:
         case filename if filename.endswith('.txt'):
             with open(filename, 'w', encoding=encoding) as file:
                 match value:
-                    case value if type(value) in (str, int, float, bool):
+                    case value if type(value) in data_types:
                         file.write(value)
                     case _:
                         file.writelines(value)
@@ -65,6 +81,8 @@ def pywrite(filename, value, encoding='utf-8'):
         case filename if filename.endswith('.pickle'):
             with open(filename, 'wb') as file:
                 pickle.dump(value, file)
+        case filename if filename.endswith('.csv'):
+            value.to_csv(filename, encoding=encoding, **kwargs)
         case _:
             raise ValueError('Unsupported File!!!')
 
@@ -123,7 +141,7 @@ def quadratic_equation(a, b=0, c=0):
 def onelist(lst):
     result=[]
     for i in lst:
-        if isinstance(i, list):
+        if isinstance(i, data_structures):
             result.extend(onelist(i))
         else:
             result.append(i)
