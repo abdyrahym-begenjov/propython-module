@@ -1,8 +1,9 @@
 import json
 import pickle
 from collections import deque
-from pandas import read_csv, concat, DataFrame
+from pandas import read_csv, concat, DataFrame, read_sql
 from inspect import signature
+from sqlalchemy import create_engine
 
 data_structures=(list, tuple, set, frozenset, deque)
 data_types=(str, int, float, bool)
@@ -146,3 +147,23 @@ def onelist(lst):
         else:
             result.append(i)
     return result
+
+def sqlread(db_user, db_password, db_host, db_port, db_name, query, **kwargs):
+    engine=create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    result=read_sql(query, con=engine, **kwargs)
+    return result
+
+def sqlrewrite(db_user, db_password, db_host, db_port, db_name, table_name, new_value, chunksize=50000, **kwargs):
+    kwargs.pop('if_exists', None)
+    engine=create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    for n, i in enumerate(range(0, len(new_value), chunksize)):
+        chunk=new_value.iloc[i:i+chunksize]
+        mode="replace" if n==0 else "append"
+        chunk.to_sql(table_name, con=engine, if_exists=mode, index=False, **kwargs)
+
+def sqladd(db_user, db_password, db_host, db_port, db_name, table_name, new_value, chunksize=10000, **kwargs):
+    kwargs.pop('if_exists', None)
+    engine=create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    for i in range(0, len(new_value), chunksize):
+        chunk=new_value.iloc[i:i+chunksize]
+        chunk.to_sql(table_name, con=engine, if_exists="append", index=False)
