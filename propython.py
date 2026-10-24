@@ -148,22 +148,39 @@ def onelist(lst):
             result.append(i)
     return result
 
-def sqlread(db_user, db_password, db_host, db_port, db_name, query, **kwargs):
-    engine=create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+def make_sqlengine(db_name, db_user=None, db_password=None, db_host='localhost', db_port=5432, db_type='postgres'):
+    match db_type.lower():
+        case 'postgresql' | 'postgres':
+            db_path=f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        case 'mysql':
+            db_path=f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        case 'sqlite':
+            db_path=f"sqlite:///{db_name}"
+        case _:
+            raise ValueError("Unsupported database type!!!")
+    return create_engine(db_path)
+
+def sqlread(query, db_name, db_user=None, db_password=None, db_host='localhost', 
+            db_port=5432, db_type='postgres', **kwargs):
+    engine=make_sqlengine(db_name, db_user, db_password, db_host, db_port, db_type)
     result=read_sql(query, con=engine, **kwargs)
     return result
 
-def sqlrewrite(db_user, db_password, db_host, db_port, db_name, table_name, new_value, chunksize=50000, **kwargs):
+def sqlrewrite(table_name, new_value, db_name, db_user=None, db_password=None, 
+               db_host='localhost', db_port=5432, db_type='postgres', chunksize=50000, **kwargs):
     kwargs.pop('if_exists', None)
-    engine=create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    kwargs.pop('method', None)
+    engine=make_sqlengine(db_name, db_user, db_password, db_host, db_port, db_type)
     for n, i in enumerate(range(0, len(new_value), chunksize)):
         chunk=new_value.iloc[i:i+chunksize]
         mode="replace" if n==0 else "append"
-        chunk.to_sql(table_name, con=engine, if_exists=mode, index=False, **kwargs)
+        chunk.to_sql(table_name, con=engine, if_exists=mode, index=False, method='multi', **kwargs)
 
-def sqladd(db_user, db_password, db_host, db_port, db_name, table_name, new_value, chunksize=10000, **kwargs):
+def sqladd(table_name, new_value, db_name, db_user=None, db_password=None, 
+           db_host='localhost', db_port=5432, db_type='postgres', chunksize=50000, **kwargs):
     kwargs.pop('if_exists', None)
-    engine=create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}")
+    kwargs.pop('method', None)
+    engine=make_sqlengine(db_name, db_user, db_password, db_host, db_port, db_type)
     for i in range(0, len(new_value), chunksize):
         chunk=new_value.iloc[i:i+chunksize]
-        chunk.to_sql(table_name, con=engine, if_exists="append", index=False)
+        chunk.to_sql(table_name, con=engine, if_exists="append", index=False, method='multi', **kwargs)
