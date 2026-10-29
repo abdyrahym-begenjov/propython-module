@@ -5,8 +5,8 @@ from pandas import read_csv, concat, DataFrame, read_sql, read_excel, ExcelWrite
 from numpy import issubdtype, integer, floating
 from inspect import signature
 from sqlalchemy import create_engine
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl import load_workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from os.path import exists
 
 data_structures=(list, tuple, set, frozenset, deque)
@@ -32,7 +32,6 @@ colors={
 
 type_formats={
     'category': '@',
-    'datetime64[ns]': 'yyyy-mm-dd',
     'object': '@',
     'integer': '#,##0',
     'float': '#,##0.##',
@@ -54,7 +53,11 @@ def pyread(filename, *, encoding='utf-8', as_list=False, **kwargs):
         case filename if filename.endswith('.csv'):
             return read_csv(filename, encoding=encoding, **kwargs)
         case filename if filename.endswith('.xlsx'):
-            return read_excel(filename, **kwargs)
+            result=read_excel(filename, **kwargs)
+            if isinstance(result, dict) and len(result)==1:
+                result=[i for i in result.values()]
+                result=result[0]
+            return result
         case _:
             raise ValueError('Unsupported File!!!')
         
@@ -79,7 +82,14 @@ def pyadd(filename, value, *, encoding='utf-8', sheet_name=None, **kwargs):
             pyrewrite(filename, file, **kw2)
         case filename if filename.endswith('.xlsx'):
             value=[value] if not isinstance(value, list) else value
-            sheet_name=[sheet_name] if not isinstance(sheet_name, list) else sheet_name
+            if sheet_name is None:
+                c=load_workbook(filename, read_only=True)
+                try:
+                    sheet_name=c.sheetnames
+                finally:
+                    c.close()
+            else:
+                sheet_name=[sheet_name] if not isinstance(sheet_name, list) else sheet_name
             if len(value)==len(sheet_name):
                 kw1={i: j for i, j in kwargs.items() if i in excelread_parameters}
                 file=pyread(filename,  sheet_name=sheet_name, **kw1)
@@ -111,7 +121,8 @@ def pyupdate(d1, d2):
                      
 def pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, head_font='Arial', head_size=12, 
               head_font_color='black', head_cell_color='white', font='Arial', size=11, font_color='black', 
-              cell_color='white', **kwargs):
+              cell_color='white', border_color='white', date_format='yyyy-mm-dd', 
+              time_format='hh:mm:ss', **kwargs):
     match filename:
         case filename if filename.endswith('.txt'):
             with open(filename, 'w', encoding=encoding) as file:
@@ -131,13 +142,19 @@ def pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, head_font='
         case filename if filename.endswith('.xlsx'):
             value=[value] if not isinstance(value, list) else value
             if sheet_name is None:
-                sheet_name=[f'Sheet{i}' for i in range(1, len(value)+1)]
+                if exists(filename):
+                    c=load_workbook(filename, read_only=True)
+                    try:
+                        sheet_name=c.sheetnames
+                    finally:
+                        c.close()
+                else:
+                    sheet_name=[f'Sheet{i}' for i in range(1, len(value)+1)]
             else:
                 sheet_name=[sheet_name] if not isinstance(sheet_name, list) else sheet_name
             if len(value)==len(sheet_name):
-                mode='a' if exists(filename) else 'w'
-                if_sheet_exists='replace' if exists(filename) else 'error'
-                with ExcelWriter(filename, mode=mode, if_sheet_exists=if_sheet_exists, engine='openpyxl') as writer:
+                ex={'mode': 'a', 'if_sheet_exists': 'replace'} if exists(filename) else {'mode': 'w'}
+                with ExcelWriter(filename, engine='openpyxl', **ex) as writer:
                     for i, j in zip(value, sheet_name):
                         i.to_excel(writer, sheet_name=j, index=False)
                         worksheet=writer.sheets[j]
@@ -147,21 +164,40 @@ def pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, head_font='
                         data_font=Font(name=font, size=size, color=colors[font_color])
                         data_fill=PatternFill(start_color=colors[cell_color], 
                                               end_color=colors[cell_color], fill_type='solid')
+                        thin_side=Side(border_style='thin', color=colors[border_color])
+                        border=Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
                         center_alignment=Alignment(horizontal='center', vertical='center')
                         for col_idx in range(1, len(i.columns)+1):
                             cell=worksheet.cell(row=1, column=col_idx)
                             cell.font=header_font
                             cell.fill=header_fill
                             cell.alignment=center_alignment
+                            cell.border=border
                         for row in range(2, len(i)+2):
                             for col in range(1, len(i.columns)+1):
                                 cell=worksheet.cell(row=row, column=col)
                                 cell.font=data_font
                                 cell.fill=data_fill
+                                cell.border=border
                                 col_name=i.columns[col-1]
                                 value_type=i[col_name].dtype
                                 if str(value_type) in type_formats:
                                     config=type_formats[str(value_type)]
+                                elif str(value_type)=='datetime64[ns]':
+                                    valid_series=i[col_name].dropna()
+                                    first_value=valid_series[0] if not valid_series.empty else None
+                                    if first_value is not None:
+                                        date_list=[str(i.date()) for i in valid_series]
+                                        time_list=[str(i.time()) for i in valid_series]
+                                        if all(i==time_list[0] for i in time_list):
+                                            type_formats['datetime64[ns]']=date_format
+                                        elif all(i==date_list[0] for i in date_list):
+                                            type_formats['datetime64[ns]']=time_format
+                                        else:
+                                            type_formats['datetime64[ns]']=f'{date_format} {time_format}'
+                                    else:
+                                        type_formats['datetime64[ns]']='General'
+                                    config=type_formats['datetime64[ns]']
                                 elif issubdtype(value_type, integer):
                                     config=type_formats['integer']
                                 elif issubdtype(value_type, floating):
