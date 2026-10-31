@@ -1,13 +1,16 @@
 import json
 import pickle
 from collections import deque
-from pandas import read_csv, concat, DataFrame, read_sql, read_excel, ExcelWriter
+from pandas import read_csv, concat, DataFrame, read_sql, read_excel, ExcelWriter, read_parquet
 from numpy import issubdtype, integer, floating
 from inspect import signature
 from sqlalchemy import create_engine
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from os.path import exists
+from os import makedirs
+from pyarrow.parquet import write_to_dataset
+from pyarrow import Table
 
 data_structures=(list, tuple, set, frozenset, deque)
 data_types=(str, int, float, bool)
@@ -52,6 +55,8 @@ def pyread(filename, *, encoding='utf-8', as_list=False, **kwargs):
                 return pickle.load(file)
         case filename if filename.endswith('.csv'):
             return read_csv(filename, encoding=encoding, **kwargs)
+        case filename if filename.endswith('.parquet'):
+            return read_parquet(filename, **kwargs)
         case filename if filename.endswith('.xlsx'):
             result=read_excel(filename, **kwargs)
             if isinstance(result, dict) and len(result)==1:
@@ -60,7 +65,7 @@ def pyread(filename, *, encoding='utf-8', as_list=False, **kwargs):
             return result
         case _:
             raise ValueError('Unsupported File!!!')
-        
+
 def pyadd(filename, value, *, encoding='utf-8', sheet_name=None, **kwargs):
     match filename:
         case filename if filename.endswith('.txt'):
@@ -80,6 +85,10 @@ def pyadd(filename, value, *, encoding='utf-8', sheet_name=None, **kwargs):
             file=concat([file, value])
             kw2={i: j for i, j in kwargs.items() if i in csvrewrite_parameters}
             pyrewrite(filename, file, **kw2)
+        case filename if filename.endswith('.parquet'):
+            makedirs(filename, exist_ok=True)
+            table=Table.from_pandas(value)
+            write_to_dataset(table, root_path=filename, **kwargs)
         case filename if filename.endswith('.xlsx'):
             value=[value] if not isinstance(value, list) else value
             if sheet_name is None:
@@ -139,6 +148,8 @@ def pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, head_font='
                 pickle.dump(value, file)
         case filename if filename.endswith('.csv'):
             value.to_csv(filename, encoding=encoding, **kwargs)
+        case filename if filename.endswith('.parquet'):
+            value.to_parquet(filename, **kwargs)
         case filename if filename.endswith('.xlsx'):
             value=[value] if not isinstance(value, list) else value
             if sheet_name is None:
@@ -156,7 +167,7 @@ def pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, head_font='
                 ex={'mode': 'a', 'if_sheet_exists': 'replace'} if exists(filename) else {'mode': 'w'}
                 with ExcelWriter(filename, engine='openpyxl', **ex) as writer:
                     for i, j in zip(value, sheet_name):
-                        i.to_excel(writer, sheet_name=j, index=False)
+                        i.to_excel(writer, sheet_name=j, index=False, **kwargs)
                         worksheet=writer.sheets[j]
                         header_font=Font(name=head_font, size=head_size, bold=True, color=colors[head_font_color])
                         header_fill=PatternFill(start_color=colors[head_cell_color], 
@@ -215,8 +226,9 @@ def pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, head_font='
         case _:
             raise ValueError('Unsupported File!!!')
 
-excelrewrite_parameters=[i for i in signature(
-    DataFrame.to_excel).parameters]+[i for i in signature(pyrewrite).parameters]
+pyread_parameters=[i for i in signature(pyread).parameters]
+pyrewrite_parameters=[i for i in signature(pyrewrite).parameters]
+excelrewrite_parameters=[i for i in signature(DataFrame.to_excel).parameters]+pyrewrite_parameters
 excelrewrite_parameters.remove('kwargs')
 
 def super_round(value, num=0):
@@ -292,13 +304,13 @@ def make_sqlengine(db_name, db_user=None, db_password=None, db_host='localhost',
             raise ValueError("Unsupported database type!!!")
     return create_engine(db_path)
 
-def sqlread(query, db_name, db_user=None, db_password=None, db_host='localhost', 
+def sqlread(query, db_name, *, db_user=None, db_password=None, db_host='localhost', 
             db_port=5432, db_type='postgres', **kwargs):
     engine=make_sqlengine(db_name, db_user, db_password, db_host, db_port, db_type)
     result=read_sql(query, con=engine, **kwargs)
     return result
 
-def sqlrewrite(table_name, new_value, db_name, db_user=None, db_password=None, 
+def sqlrewrite(table_name, new_value, db_name, *, db_user=None, db_password=None, 
                db_host='localhost', db_port=5432, db_type='postgres', chunksize=50000, **kwargs):
     kwargs.pop('if_exists', None)
     kwargs.pop('method', None)
@@ -308,7 +320,10 @@ def sqlrewrite(table_name, new_value, db_name, db_user=None, db_password=None,
         mode="replace" if n==0 else "append"
         chunk.to_sql(table_name, con=engine, if_exists=mode, index=False, method='multi', **kwargs)
 
-def sqladd(table_name, new_value, db_name, db_user=None, db_password=None, 
+sqlread_parameters=[i for i in signature(sqlread).parameters]
+sqlrewrite_parameters=[i for i in signature(sqlrewrite).parameters]
+
+def sqladd(table_name, new_value, db_name, *, db_user=None, db_password=None, 
            db_host='localhost', db_port=5432, db_type='postgres', chunksize=50000, **kwargs):
     kwargs.pop('if_exists', None)
     kwargs.pop('method', None)
@@ -316,3 +331,33 @@ def sqladd(table_name, new_value, db_name, db_user=None, db_password=None,
     for i in range(0, len(new_value), chunksize):
         chunk=new_value.iloc[i:i+chunksize]
         chunk.to_sql(table_name, con=engine, if_exists="append", index=False, method='multi', **kwargs)
+
+def transform_from_sql(filepath, query, db_name, **kwargs):
+    match filepath:
+        case filepath if filepath.endswith('.csv'):
+            from_sql_parameters=[i for i in signature(DataFrame.to_csv).parameters]
+        case filepath if filepath.endswith('.parquet'):
+            from_sql_parameters=[i for i in signature(DataFrame.to_parquet).parameters]
+        case filepath if filepath.endswith('.xlsx'):
+            from_sql_parameters=[i for i in signature(DataFrame.to_excel).parameters]+pyrewrite_parameters
+        case _:
+            raise ValueError('Unsupported file!!!')
+    k1={i: j for i, j in kwargs.items() if i in sqlread_parameters}
+    result=sqlread(query, db_name, **k1)
+    k2={i: j for i, j in kwargs.items() if i in from_sql_parameters}
+    pyrewrite(filepath, result, **k2)
+
+def transform_to_sql(filepath, table_name, db_name, **kwargs):
+    match filepath:
+        case filepath if filepath.endswith('.csv'):
+            to_sql_parameters=[i for i in signature(read_csv).parameters]
+        case filepath if filepath.endswith('.parquet'):
+            to_sql_parameters=[i for i in signature(read_parquet).parameters]
+        case filepath if filepath.endswith('.xlsx'):
+            to_sql_parameters=[i for i in signature(read_excel).parameters]+pyread_parameters
+        case _:
+            raise ValueError('Unsupported file!!!')
+    k1={i: j for i, j in kwargs.items() if i in to_sql_parameters}
+    result=pyread(filepath, **k1)
+    k2={i: j for i, j in kwargs.items() if i in sqlrewrite_parameters}
+    sqlrewrite(table_name, result, db_name, **k2)
