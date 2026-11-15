@@ -1,7 +1,9 @@
 import json
 import pickle
+import re
+from datetime import datetime
 from collections import deque
-from pandas import read_csv, concat, DataFrame, read_sql, read_excel, ExcelWriter, read_parquet
+from pandas import read_csv, concat, DataFrame, read_sql, read_excel, ExcelWriter, read_parquet, Timestamp, DateOffset, to_datetime
 from numpy import issubdtype, integer, floating
 from inspect import signature
 from sqlalchemy import create_engine
@@ -361,3 +363,143 @@ def transform_to_sql(filepath, table_name, db_name, **kwargs):
     result=pyread(filepath, **k1)
     k2={i: j for i, j in kwargs.items() if i in sqlrewrite_parameters}
     sqlrewrite(table_name, result, db_name, **k2)
+
+def take_month(value):
+    if value in ('january', 'jan', 'январь', 'января', 'янв', '01', '1'):
+        return [1, 31]
+    elif value in ('february', 'feb', 'февраль', 'февраля', 'фев', '02', '2'):
+        return [2, 28]
+    elif value in ('march', 'mar', 'март', 'марта', 'мар', '03', '3'):
+        return [3, 31]
+    elif value in ('april', 'apr', 'апрель', 'апреля', 'апр', '04', '4'):
+        return [4, 30]
+    elif value in ('may', 'май', 'мая', '05', '5'):
+        return [5, 31]
+    elif value in ('june', 'jun', 'июнь', 'июня', 'июн', '06', '6'):
+        return [6, 30]
+    elif value in ('july', 'jul', 'июль', 'июля', 'июл', '07', '7'):
+        return [7, 31]
+    elif value in ('august', 'aug', 'август', 'августа', 'авг', '08', '8'):
+        return [8, 31]
+    elif value in ('september', 'sep', 'сентябрь', 'сентября', 'сен', '09', '9'):
+        return [9, 30]
+    elif value in ('october', 'oct', 'октябрь', 'октября', 'окт', '10'):
+        return [10, 31]
+    elif value in ('november', 'nov', 'ноябрь', 'ноября', 'ноя', '11'):
+        return [11, 30]
+    elif value in ('december', 'dec', 'декабрь', 'декабря', 'дек', '12'):
+        return [12, 31]
+    else:
+        raise ValueError('The entered month does not exist!!!')
+
+def take_weekday(value, start_zero, start_sunday):
+    numweek_list=['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+                  '01', '02', '03', '04', '05', '06', '07', '08', '09']
+    if value in ('monday', 'mon', 'mo', 'понедельник', 'пон', 'пн', '01', '1'):
+        result=1
+    elif value in ('tuesday', 'tue', 'tu', 'вторник', 'вто', 'вт', '02', '2'):
+        result=2
+    elif value in ('wednesday', 'wed', 'we', 'среда', 'сре', 'ср', '03', '3'):
+        result=3
+    elif value in ('thursday', 'thu', 'th', 'четверг', 'чет', 'чт', '04', '4'):
+        result=4
+    elif value in ('friday', 'fri', 'fr', 'пятница', 'пят', 'пт', '05', '5'):
+        result=5
+    elif value in ('saturday', 'sat', 'sa', 'суббота', 'суб', 'сб', '06', '6'):
+        result=6
+    elif value in ('sunday', 'sun', 'su', 'воскресенье', 'вос', 'вс', '07', '7'):
+        result=7
+    else:
+        raise ValueError('The entered day of the week does not exist!!!')
+    if start_zero==True and value in numweek_list:
+        result+=1
+    if start_sunday==True:
+        result-=1
+        if result==0:
+            result=7
+    return result
+
+rd_list={'yesterday', 'the day before yesterday', 'tomorrow', 'the day after tomorrow', 'today', 'now', 'ago', 'in',
+         'вчера', 'позавчера', 'завтра', 'послезавтра', 'сегодня', 'сейчас', 'назад', 'через'}
+
+def relative_date(value, current_date='now'):
+    if value in ('yesterday', 'вчера'):
+        offset=DateOffset(days=1)
+        result=Timestamp(current_date)-offset
+    elif value in ('the day before yesterday', 'позавчера'):
+        offset=DateOffset(days=2)
+        result=Timestamp(current_date)-offset
+    elif value in ('tomorrow', 'завтра'):
+        offset=DateOffset(days=1)
+        result=Timestamp(current_date)+offset
+    elif value in ('the day after tomorrow', 'послезавтра'):
+        offset=DateOffset(days=2)
+        result=Timestamp(current_date)+offset
+    elif value in ('today', 'now', 'сегодня', 'сейчас'):
+        result=Timestamp(current_date)
+    else:
+        value=value.split()
+        if value[-1] in ('ago', 'назад'):
+            if value[0] in ('a', 'an'):
+                value[0]='1'
+            elif len(value)==2:
+                value.insert(0, '1')
+            num, word=int(value[0]), value[1]
+        else:
+            if value[1] in ('a', 'an'):
+                value[1]='1'
+            elif len(value)==2:
+                value.insert(1, '1')
+            num, word=int(value[1]), value[2]
+        if word in ['day', 'days', 'день', 'дня', 'дней']:
+            offset=DateOffset(days=num)
+        elif word in ['week', 'weeks', 'неделю', 'недель', 'недели']:
+            offset=DateOffset(weeks=num)
+        elif word in ['month', 'months', 'месяц', 'месяца', 'месяцев']:
+            offset=DateOffset(months=num)
+        elif word in ['year', 'years', 'год', 'года', 'лет']:
+            offset=DateOffset(years=num)
+        else:
+            return None
+        if value[-1] in ('ago', 'назад'):
+            result=Timestamp(current_date)-offset
+        elif value[0] in ('in', 'через'):
+            result=Timestamp(current_date)+offset
+    return result.strftime('%Y-%m-%d')
+    
+def make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):
+    value=value.lower()
+    if any(i in value for i in rd_list):
+        return relative_date(value, current_date)
+    lst=re.split(r'[-/.,: ]', value)
+    lst=[i for i in lst if i!='']
+    year_idx=order.index('y')
+    if len(lst[year_idx])==2:
+        lst[year_idx]=f'{str(century-1)}{lst[year_idx]}'
+    elif len(lst[year_idx])<2:
+        raise ValueError('The year should not be less than 100!!!')
+    if 'n' in order and 'w' in order:
+        numweek_idx=order.index('n')
+        weekday_idx=order.index('w')
+        weekday_value=take_weekday(lst[weekday_idx], start_zero, start_sunday)
+        if lst[numweek_idx].startswith('w'):
+            lst[numweek_idx]=lst[numweek_idx][1:]
+        first_day_year=str(Timestamp(lst[year_idx]).dayofweek+1)
+        if (int(lst[year_idx])%4==0 and first_day_year in ('3', '4')) or first_day_year=='4':
+            max_numweek=53
+        else:
+            max_numweek=52
+        if 0<int(lst[numweek_idx])<=max_numweek:
+            result=f'{lst[year_idx]}-W{lst[numweek_idx]}-{weekday_value}'
+            return str(to_datetime(result, format='%G-W%V-%u').date())
+        raise ValueError('The week number must not exceed the maximum number of the specified year!!!')
+    else:
+        month_idx=order.index('m')
+        day_idx=order.index('d')
+        month_values=take_month(lst[month_idx].lower())
+        if int(lst[year_idx])%4==0 and month_values[0]==2:
+            month_values[1]+=1
+        lst[month_idx]=month_values[0]
+        if 0<int(lst[day_idx])<=month_values[1]:
+            return f'{lst[year_idx]}-{str(lst[month_idx]).zfill(2)}-{str(lst[day_idx]).zfill(2)}'
+        raise ValueError('A month cannot be more than 12!!!')
