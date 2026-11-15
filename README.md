@@ -102,6 +102,35 @@ ProPython is a simple and helpful Python library. It helps you work with differe
 * **Capabilities:**
   * Safely processes linear cases if a = 0 or b = 0.
   * Returns `None` if there are no real roots, one number if there is one root, or a tuple `(x1, x2)` if there are two roots.
+ 
+### `take_month(value)`
+
+* **Description:** Converts months from any format to a numeric value.
+* **Features:** Supports Russian and English.
+
+### `take_weekday(value, start_zero, start_sunday)`
+
+* **Description:** Converts weekdays from any format to a numeric value.
+* **Features:**
+* Supports Russian and English.
+* Automatically handles different types of weekday indexing.
+
+### `relative_date(value, current_date='now')`
+
+* **Description:** Converts a relative date string to a datetime object.
+* **Features:**
+* Supports Russian and English.
+* Multiple operations with relative dates.
+
+ ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):`
+
+* **Description:** Converts various forms of string dates to a datetime object.
+* **Features:**
+* Supports Russian and English.
+* Supports the current date and any date specified for calculations with other dates.
+* Includes many features, including the internal functions relative_date, take_month, and take_weekday.
+* Handling short year entries using the century parameter.
+* Arrangement of year, month, day, day of the week, and week numbering.
 
 
 ## Русский
@@ -226,3 +255,32 @@ ProPython — это простая и полезная библиотека д�
 * **Возможности:**
   * Безопасно обрабатывает линейные случаи, если коэффициенты `a` или `b` равны нулю.
   * Возвращает `None`, если вещественных корней нет, одно число при единственном корне или кортеж `(x1, x2)`, если корней два.
+
+### `take_month(value)`
+
+* **Описание:** Преобразовывает из любых форматов месяцев в числовом виде.
+* **Возможности:** Поддерживает русский и английский языки.
+
+### `take_weekday(value, start_zero, start_sunday)`
+
+* **Описание:** Преобразовывает из любых форматов дней недель в числовом виде.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Автоматическая обработка разных видов индексации дней недель.
+
+### `relative_date(value, current_date='now')`
+
+* **Описание:** Преобразовывает из относительной строковой даты в объект datetime.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Множество операций с относительными датами.
+
+### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):`
+
+* **Описание:** Преобразовывает из различных форм строковых дат в объект datetime.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Поддержка текущей даты и прописывание любой даты для расчёта с остальными датами.
+  * Включает множество функционалов, в том числе внутренние функции relative_date, take_month, take_weekday.
+  * Обработка коротких записей годов благодаря параметру century.
+  * Расстановка положений года, месяца, дня, дня недели и нумерации недель.
