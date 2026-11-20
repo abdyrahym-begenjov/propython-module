@@ -115,12 +115,24 @@ ProPython is a simple and helpful Python library. It helps you work with differe
 * Supports Russian and English.
 * Automatically handles different types of weekday indexing.
 
+### `distributor(s)`
+
+* **Description:** A finite state machine that creates values from string elements in a list.
+* **Features:** Distributes values by arrow and numeric type.
+
 ### `relative_date(value, current_date='now')`
 
 * **Description:** Converts a relative date string to a datetime object.
 * **Features:**
 * Supports Russian and English.
 * Multiple operations with relative dates.
+
+### `relative_time(value, current_date='now')`
+
+* **Description:** Converts a relative time string to a time object.
+* **Features:**
+* Supports Russian and English.
+* Many operations with relative times.
 
  ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):`
 
@@ -132,6 +144,14 @@ ProPython is a simple and helpful Python library. It helps you work with differe
 * Handling short year entries using the century parameter.
 * Arrangement of year, month, day, day of the week, and week numbering.
 
+### `make_time(value, *, order='HMS', current_date='now'):`
+
+* **Description:** Converts various forms of string times to a time object.
+* **Features:**
+* Supports Russian and English.
+* Supports the current time and specifies any time for calculations with other times.
+* Includes many features, including the internal functions relative_time and distributor.
+* Smart validation of time unit ranges.
 
 ## Русский
 ## Propython: утилиты файлов, баз данных и математики 🐍
@@ -261,12 +281,10 @@ ProPython — это простая и полезная библиотека д�
 * **Описание:** Преобразовывает из любых форматов месяцев в числовом виде.
 * **Возможности:** Поддерживает русский и английский языки.
 
-### `take_weekday(value, start_zero, start_sunday)`
+### `distributor(s)`
 
-* **Описание:** Преобразовывает из любых форматов дней недель в числовом виде.
-* **Возможности:**
-  * Поддерживает русский и английский языки.
-  * Автоматическая обработка разных видов индексации дней недель.
+* **Описание:** Конечный автомат, который создаёт значения из элементов строки в список.
+* **Возможности:** Распределяет значения по стрелковому и числовому виду.
 
 ### `relative_date(value, current_date='now')`
 
@@ -274,6 +292,13 @@ ProPython — это простая и полезная библиотека д�
 * **Возможности:**
   * Поддерживает русский и английский языки.
   * Множество операций с относительными датами.
+
+### `relative_time(value, current_date='now')`
+
+* **Описание:** Преобразовывает из относительного строкового времени в объект time.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Множество операций с относительными временами.
 
 ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):`
 
@@ -284,3 +309,12 @@ ProPython — это простая и полезная библиотека д�
   * Включает множество функционалов, в том числе внутренние функции relative_date, take_month, take_weekday.
   * Обработка коротких записей годов благодаря параметру century.
   * Расстановка положений года, месяца, дня, дня недели и нумерации недель.
+
+### `make_time(value, *, order='HMS', current_date='now'):`
+
+* **Описание:** Преобразовывает из различных форм строковых времён в объект time.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Поддержка текущего времени и прописывание любого времени для расчёта с остальными временами.
+  * Включает множество функционалов, в том числе внутренние функции relative_time и distributor.
+  * Умная проверка диапазона единиц времени.
