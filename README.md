@@ -106,52 +106,52 @@ ProPython is a simple and helpful Python library. It helps you work with differe
 ### `take_month(value)`
 
 * **Description:** Converts months from any format to a numeric value.
-* **Features:** Supports Russian and English.
+* **Capabilities:** Supports Russian and English.
 
 ### `take_weekday(value, start_zero, start_sunday)`
 
 * **Description:** Converts weekdays from any format to a numeric value.
-* **Features:**
+* **Capabilities:**
 * Supports Russian and English.
 * Automatically handles different types of weekday indexing.
 
 ### `distributor(s)`
 
 * **Description:** A finite state machine that creates values from string elements in a list.
-* **Features:** Distributes values by arrow and numeric type.
+* **Capabilities:** Distributes values by arrow and numeric type.
 
-### `relative_date(value, current_date='now')`
+### `relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', from_tz=none, to_tz=none)` 
+* **Description:** Converts from relative string dates and times to a DateTime object.
+* * **Capabilities:**
+  * Supports Russian and English.
+  * Many operations with relative dates and times.
 
-* **Description:** Converts a relative date string to a datetime object.
-* **Features:**
-* Supports Russian and English.
-* Multiple operations with relative dates.
-
-### `relative_time(value, current_date='now')`
-
-* **Description:** Converts a relative time string to a time object.
-* **Features:**
-* Supports Russian and English.
-* Many operations with relative times.
-
- ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):`
+ ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False)`
 
 * **Description:** Converts various forms of string dates to a datetime object.
-* **Features:**
-* Supports Russian and English.
-* Supports the current date and any date specified for calculations with other dates.
-* Includes many features, including the internal functions relative_date, take_month, and take_weekday.
-* Handling short year entries using the century parameter.
-* Arrangement of year, month, day, day of the week, and week numbering.
+* **Capabilities:**
+  * Supports Russian and English.
+  * Supports the current date and any date specified for calculations with other dates.
+  * Includes many features, including the internal functions relative_datetime, take_month, and take_weekday.
+  * Handling short year entries using the century parameter.
+  * Arrangement of year, month, day, day of the week, and week numbering.
 
-### `make_time(value, *, order='HMS', current_date='now'):`
+### `make_time(value, *, order='HMS', current_time='now', from_tz=None, to_tz=None)`
 
 * **Description:** Converts various forms of string times to a time object.
-* **Features:**
-* Supports Russian and English.
-* Supports the current time and specifies any time for calculations with other times.
-* Includes many features, including the internal functions relative_time and distributor.
-* Smart validation of time unit ranges.
+* **Capabilities:**
+  * Supports Russian and English.
+  * Supports the current time and specifies any time for calculations with other times.
+  * Includes many features, including the internal functions relative_time and distributor.
+  * Smart validation of time unit ranges.
+  * Working with time zones and automatic determination of the local time zone.
+
+### `make_datetime(value, *, order_date='yMD', order_time='hms', century=21, isFirstTime=false, start_sunday=false, start_zero=false, current_datetime='now', from_tz=none, to_tz=none)` 
+* **Description:** Converts from different forms String dates + time to the DateTime object.
+* **Capabilities:**
+  * Supports Russian and English.
+  * Support the current date and time and prescribing any dates and times for calculation with other dates and times.
+  * Includes a lot of functionality, including internal functions Relative_DateTime, make_date, make_time, work_timezone1 and work_timezone2.
 
 ## Русский
 ## Propython: утилиты файлов, баз данных и математики 🐍
@@ -228,7 +228,7 @@ ProPython — это простая и полезная библиотека д�
 
 ### `sqladd(table_name, new_value, db_name, ..., chunksize=50000, **kwargs)`
 
-* **Description:** Добавляет новые строки из DataFrame в конец существующей таблицы в базе данных.
+* **Описание:** Добавляет новые строки из DataFrame в конец существующей таблицы в базе данных.
 * **Возможности:**
   * Никогда не удаляет старые данные в БД, только дописывает новые.
   * Использует ту же производительную систему разбивки на чанки, что и `sqlrewrite`.
@@ -281,26 +281,26 @@ ProPython — это простая и полезная библиотека д�
 * **Описание:** Преобразовывает из любых форматов месяцев в числовом виде.
 * **Возможности:** Поддерживает русский и английский языки.
 
+### `take_weekday(value, start_zero, start_sunday)`
+
+* **Описание:** Преобразует дни недели из любого формата в числовое значение.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Автоматически обрабатывает различные типы индексации дней недели.
+
 ### `distributor(s)`
 
 * **Описание:** Конечный автомат, который создаёт значения из элементов строки в список.
 * **Возможности:** Распределяет значения по стрелковому и числовому виду.
 
-### `relative_date(value, current_date='now')`
+### `relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', from_tz=None, to_tz=None)`
 
-* **Описание:** Преобразовывает из относительной строковой даты в объект datetime.
+* **Описание:** Преобразовывает из относительных строковых дат и времён в объект datetime.
 * **Возможности:**
   * Поддерживает русский и английский языки.
-  * Множество операций с относительными датами.
+  * Множество операций с относительными датами и временами.
 
-### `relative_time(value, current_date='now')`
-
-* **Описание:** Преобразовывает из относительного строкового времени в объект time.
-* **Возможности:**
-  * Поддерживает русский и английский языки.
-  * Множество операций с относительными временами.
-
-### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):`
+### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False)`
 
 * **Описание:** Преобразовывает из различных форм строковых дат в объект datetime.
 * **Возможности:**
@@ -310,11 +310,19 @@ ProPython — это простая и полезная библиотека д�
   * Обработка коротких записей годов благодаря параметру century.
   * Расстановка положений года, месяца, дня, дня недели и нумерации недель.
 
-### `make_time(value, *, order='HMS', current_date='now'):`
+### `make_time(value, *, order='HMS', current_time='now', from_tz=None, to_tz=None)`
 
 * **Описание:** Преобразовывает из различных форм строковых времён в объект time.
 * **Возможности:**
   * Поддерживает русский и английский языки.
   * Поддержка текущего времени и прописывание любого времени для расчёта с остальными временами.
-  * Включает множество функционалов, в том числе внутренние функции relative_time и distributor.
+  * Включает множество функционалов, в том числе внутренние функции relative_datetime, work_timezone1, work_timezone2, distributor.
   * Умная проверка диапазона единиц времени.
+  * Работа с часовыми поясами и автоматическое определение локального часового пояса.
+
+### `make_datetime(value, *, order_date='ymd', order_time='HMS', century=21, isfirsttime=False, start_sunday=False, start_zero=False, current_datetime='now', from_tz=None, to_tz=None)`
+* **Описание:** Преобразовывает из различных форм строковых дат + времён в объект datetime.
+* **Возможности:**
+  * Поддерживает русский и английский языки.
+  * Поддержка текущих даты и времени и прописывание любых дат и времён для расчёта с остальными датами и временами.
+  * Включает множество функционалов, в том числе внутренние функции relative_datetime, make_date, make_time, work_timezone1 иwork_timezone2.
