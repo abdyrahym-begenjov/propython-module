@@ -26,7 +26,7 @@ colors={
     'red': 'FF0000',
     'lime': '00FF00',
     'blue': '0000FF',
-    'yellow': 'FF00FF',
+    'yellow': 'FFFF00',
     'cyan': '00FFFF',
     'grey': 'A9A9A9',
     'green': '008000',
@@ -41,6 +41,61 @@ type_formats={
     'integer': '#,##0',
     'float': '#,##0.##',
     'default': 'General'
+}
+
+timezones = {
+    'utc': 'UTC',
+    'gmt': 'GMT',
+    'ashgabat': 'Asia/Ashgabat',
+    'turkmenistan': 'Asia/Ashgabat',
+    'tmt': 'Asia/Ashgabat',
+    'tashkent': 'Asia/Tashkent',
+    'uzbekistan': 'Asia/Tashkent',
+    'almaty': 'Asia/Almaty',
+    'astana': 'Asia/Almaty',
+    'kazakhstan': 'Asia/Almaty',
+    'bishkek': 'Asia/Bishkek',
+    'dushanbe': 'Asia/Dushanbe',
+    'baku': 'Asia/Baku',
+    'yerevan': 'Asia/Yerevan',
+    'tbilisi': 'Asia/Tbilisi',
+    'minsk': 'Europe/Minsk',
+    'moscow': 'Europe/Moscow',
+    'msk': 'Europe/Moscow',
+    'yekaterinburg': 'Asia/Yekaterinburg',
+    'novosibirsk': 'Asia/Novosibirsk',
+    'vladivostok': 'Asia/Vladivostok',
+    'dubai': 'Asia/Dubai',
+    'uae': 'Asia/Dubai',
+    'istanbul': 'Europe/Istanbul',
+    'turkey': 'Europe/Istanbul',
+    'tehran': 'Asia/Tehran',
+    'beijing': 'Asia/Shanghai',
+    'china': 'Asia/Shanghai',
+    'tokyo': 'Asia/Tokyo',
+    'japan': 'Asia/Tokyo',
+    'seoul': 'Asia/Seoul',
+    'singapore': 'Asia/Singapore',
+    'delhi': 'Asia/Kolkata',
+    'india': 'Asia/Kolkata',
+    'london': 'Europe/London',
+    'uk': 'Europe/London',
+    'berlin': 'Europe/Berlin',
+    'paris': 'Europe/Paris',
+    'rome': 'Europe/Rome',
+    'madrid': 'Europe/Madrid',
+    'warsaw': 'Europe/Warsaw',
+    'new_york': 'America/New_York',
+    'est': 'America/New_York',
+    'chicago': 'America/Chicago',
+    'cst': 'America/Chicago',
+    'denver': 'America/Denver',
+    'mst': 'America/Denver',
+    'phoenix': 'America/Phoenix',
+    'los_angeles': 'America/Los_Angeles',
+    'pst': 'America/Los_Angeles',
+    'toronto': 'America/Toronto',
+    'sao_paulo': 'America/Sao_Paulo'
 }
 
 def pyread(filename, *, encoding='utf-8', as_list=False, **kwargs):
@@ -234,6 +289,8 @@ excelrewrite_parameters=[i for i in signature(DataFrame.to_excel).parameters]+py
 excelrewrite_parameters.remove('kwargs')
 
 def super_round(value, num=0):
+    if '.' not in str(value):
+        value=float(f'{value}.0')
     n1=1 if value>=0 else -1
     a, b=str(f"{abs(value)}").split('.')
     if b=='0':
@@ -442,27 +499,59 @@ def distributor(s):
     result=[i.strip() for i in result if i!='']
     return result
 
-rd_list={'yesterday', 'the day before yesterday', 'tomorrow', 'the day after tomorrow', 'today', 'now', 'ago', 'in',
-         'вчера', 'позавчера', 'завтра', 'послезавтра', 'сегодня', 'сейчас', 'назад', 'через'}
+def work_timezone1(value, to_tz, from_tz):
+    if to_tz in timezones:
+        if from_tz is None:
+            from_tz=datetime.now().astimezone().tzinfo
+        else:
+            from_tz=timezones[from_tz.lower()]
+        to_tz=timezones[to_tz.lower()]
+        value=value.tz_localize(from_tz).tz_convert(to_tz)
+    elif from_tz in timezones:
+        from_tz=timezones[from_tz.lower()]
+        value=value.tz_localize(from_tz)
+    return value
 
-rt_list={'ago', 'in', 'now', 'half an hour ago', 'in half an hour', 'an hour and a half ago', 'in an hour and a half', 
-          'назад', 'через', 'сейчас', 'полчаса назад', 'через полчаса', 'полтора часа назад', 'через полтора часа'}
+def work_timezone2(value, keyword, to_tz, from_tz):
+    if to_tz not in timezones and from_tz not in timezones:
+        return value.strftime('%X') if keyword=='time' else value.strftime('%Y-%m-%d %X')
+    value=value.strftime('%X %z') if keyword=='time' else value.strftime('%Y-%m-%d %X %z')
+    value=list(value)
+    value.insert(-2, ':')
+    value=''.join(value)
+    return value.strip()
 
-def relative_date(value, current_date='now'):
+dt_list={'yesterday', 'the day before yesterday', 'tomorrow', 'the day after tomorrow', 'today', 'now', 'ago', 
+         'in', 'half an hour ago', 'in half an hour', 'an hour and a half ago', 'in an hour and a half',
+         'вчера', 'позавчера', 'завтра', 'послезавтра', 'сегодня', 'сейчас', 'назад', 'через',
+         'полчаса назад', 'через полчаса', 'полтора часа назад', 'через полтора часа'}
+
+def relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', 
+             from_tz=None, to_tz=None):
+    if keyword=='date':
+        current=Timestamp(current_date)
+    elif keyword=='time':
+        current=work_timezone1(Timestamp(current_time), to_tz, from_tz)
+    else:
+        current=work_timezone1(Timestamp(current_datetime), to_tz, from_tz)
     if value in ('yesterday', 'вчера'):
-        offset=DateOffset(days=1)
-        result=Timestamp(current_date)-offset
+        result=current-DateOffset(days=1)
     elif value in ('the day before yesterday', 'позавчера'):
-        offset=DateOffset(days=2)
-        result=Timestamp(current_date)-offset
+        result=current-DateOffset(days=2)
     elif value in ('tomorrow', 'завтра'):
-        offset=DateOffset(days=1)
-        result=Timestamp(current_date)+offset
+        result=current+DateOffset(days=1)
     elif value in ('the day after tomorrow', 'послезавтра'):
-        offset=DateOffset(days=2)
-        result=Timestamp(current_date)+offset
+        result=current+DateOffset(days=2)
     elif value in ('today', 'now', 'сегодня', 'сейчас'):
-        result=Timestamp(current_date)
+        result=current
+    elif value in ('half an hour ago', 'полчаса назад'):
+        result=current-DateOffset(minutes=30)
+    elif value in ('an hour and a half ago', 'полтора часа назад'):
+        result=current-DateOffset(minutes=90)
+    elif value in ('in half an hour', 'через полчаса'):
+        result=current+DateOffset(minutes=30)
+    elif value in ('in an hour and a half', 'через полтора часа'):
+        result=current+DateOffset(minutes=90)
     else:
         value=value.split()
         if value[-1] in ('ago', 'назад'):
@@ -477,7 +566,7 @@ def relative_date(value, current_date='now'):
             elif len(value)==2:
                 value.insert(1, '1')
             word=''.join(value[1:])
-        years, weeks, months, days=0, 0, 0, 0
+        years, weeks, months, days, hours, minutes, seconds=0, 0, 0, 0, 0, 0, 0
         distrub_list=distributor(word)
         for i in range(0, len(distrub_list), 2):
             if any(x==distrub_list[i+1] for x in ['day', 'days', 'день', 'дня', 'дней']):
@@ -488,65 +577,39 @@ def relative_date(value, current_date='now'):
                 months+=int(distrub_list[i])
             if any(x==distrub_list[i+1] for x in ['year', 'years', 'год', 'года', 'лет']):
                 years+=int(distrub_list[i])
-        offset=DateOffset(years=years, weeks=weeks, months=months, days=days)
-        if value[-1] in ('ago', 'назад'):
-            result=Timestamp(current_date)-offset
-        elif value[0] in ('in', 'через'):
-            result=Timestamp(current_date)+offset
-    return result.strftime('%Y-%m-%d')
-
-def relative_time(value, current_time='now'):
-    if value in ('half an hour ago', 'полчаса назад'):
-        offset=DateOffset(minutes=30)
-        result=Timestamp(current_time)-offset
-    elif value in ('an hour and a half ago', 'полтора часа назад'):
-        offset=DateOffset(minutes=90)
-        result=Timestamp(current_time)-offset
-    elif value in ('in half an hour', 'через полчаса'):
-        offset=DateOffset(minutes=30)
-        result=Timestamp(current_time)+offset
-    elif value in ('in an hour and a half', 'через полтора часа'):
-        offset=DateOffset(minutes=90)
-        result=Timestamp(current_time)+offset
-    elif value in ('now', 'сейчас'):
-        result=Timestamp(current_time)
-    else:
-        value=value.lower().split()
-        if value[-1] in ('ago', 'назад'):
-            if value[0] in ('a', 'an'):
-                value[0]='1'
-            elif len(value)==2:
-                value.insert(0, '1')
-            word=''.join(value[:-1])
-        else:
-            if value[1] in ('a', 'an'):
-                value[1]='1'
-            elif len(value)==2:
-                value.insert(1, '1')
-            word=''.join(value[1:])
-        hours, minutes, seconds=0, 0, 0
-        distrub_list=distributor(word)
-        for i in range(0, len(distrub_list), 2):
             if any(x==distrub_list[i+1] for x in ['h', 'hour', 'hours', 'ч', 'час', 'часа', 'часов']):
                 hours+=int(distrub_list[i])
             if any(x==distrub_list[i+1] for x in ['m', 'min', 'minute', 'minutes', 'м', 'мин', 'минут', 'минуту']):
                 minutes+=int(distrub_list[i])
             if any(x==distrub_list[i+1] for x in ['s', 'sec', 'second', 'seconds', 'с', 'сек', 'секунд', 'секунду']):
                 seconds+=int(distrub_list[i])
-        offset=DateOffset(hours=hours, minutes=minutes, seconds=seconds)
+        offset=DateOffset(years=years, weeks=weeks, months=months, days=days, 
+                          hours=hours, minutes=minutes, seconds=seconds)
         if value[-1] in ('ago', 'назад'):
-            result=Timestamp(current_time)-offset
+            result=current-offset
         elif value[0] in ('in', 'через'):
-            result=Timestamp(current_time)+offset
-    return result.strftime('%H-%M-%S')
+            result=current+offset
+    if keyword=='date':
+        return result.strftime('%Y-%m-%d')
+    return work_timezone2(result, keyword, to_tz, from_tz)
 
 def make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False):
-    value=value.lower()
-    if any(i in value for i in rd_list):
-        return relative_date(value, current_date)
-    lst=re.split(r'[-/.,: ]', value)
-    lst=[i for i in lst if i!='']
-    year_idx=order.index('y')
+    if isinstance(value, str):
+        keyword='date'
+        value=value.lower().strip()
+        if any(i in value for i in dt_list):
+            return relative_datetime(value, keyword, current_date=current_date)
+        lst=re.split(r'[-/.,: ]', value)
+        lst=[i.strip() for i in lst if i!='']
+    else:
+        lst=value
+    lst=lst[:len(order)]
+    if 'y' not in order:
+        current_year=Timestamp(current_date).year
+        lst.append(str(current_year))
+        year_idx=2
+    else:
+        year_idx=order.index('y')
     if len(lst[year_idx])==2:
         lst[year_idx]=f'{str(century-1)}{lst[year_idx]}'
     elif len(lst[year_idx])<2:
@@ -577,37 +640,52 @@ def make_date(value, *, order='ymd', current_date='now', century=21, start_sunda
             return f'{lst[year_idx]}-{str(lst[month_idx]).zfill(2)}-{str(lst[day_idx]).zfill(2)}'
         raise ValueError('A month cannot be more than 12!!!')
     
-def make_time(value, *, order='HMS', current_time='now'):
-    value=value.lower()
-    if any(i in value for i in rt_list):
-        return relative_time(value, current_time)
-    lst=re.split(r'[-/.,: am pm]', value)
-    lst=[i for i in lst if i!='']
-    hour_idx=order.index('H')
-    if 'pm' in value or 'p.m.' in value:
-        if lst[hour_idx]=='12':
-            lst[hour_idx]='12'
-        elif 0<=int(lst[hour_idx])<12:
-            lst[hour_idx]=str(int(lst[hour_idx].strip())+12)
-    if 'am' in value or 'a.m.' in value:
-        if lst[hour_idx]=='12':
-            lst[hour_idx]='00'
-        elif 12<int(lst[hour_idx])<=24:
-            lst[hour_idx]=str(int(lst[hour_idx].strip())-12)
-    if 0<=int(lst[hour_idx])<24:
-        hour_value=lst[hour_idx]
-    elif int(lst[hour_idx])==24:
+def make_time(value, *, order='HMS', current_time='now', from_tz=None, to_tz=None):
+    keyword='time'
+    if isinstance(value, str):
+        value=value.lower()
+        if any(i in value for i in dt_list):
+            return relative_datetime(value, keyword, current_time=current_time, from_tz=from_tz, to_tz=to_tz)
+        pattern=r'\s*(?<![a-zA-Z])(?:a\.m|p\.m|am|pm)\.?(?![a-zA-Z])\s*|\s*[-/.,: ]\s*'
+        lst=re.split(pattern, value)
+        lst=[i.strip() for i in lst if i!='']
+    else:
+        lst=value.copy()
+        lst=[i.strip() for i in lst if i.strip() not in ['am', 'pm', 'a.m', 'p.m']]
+    order=order[:len(lst)]
+    if not any(i in {'H', 'M', 'S'} for i in order):
+        raise ValueError('Error!!!')
+    if 'H' not in order:
         hour_value='00'
     else:
-        raise ValueError('Hours cannot be greater than 24 and less than 0!!!')
-    minute_idx=order.index('M')
-    if 0<=int(lst[minute_idx])<60:
-        minute_value=lst[minute_idx]
-    elif int(lst[minute_idx])==60:
+        hour_idx=order.index('H')
+        if 'pm' in value or 'p.m.' in value:
+            if lst[hour_idx]=='12':
+                lst[hour_idx]='12'
+            elif 0<=int(lst[hour_idx])<12:
+                lst[hour_idx]=str(int(lst[hour_idx].strip())+12)
+        if 'am' in value or 'a.m.' in value:
+            if lst[hour_idx]=='12':
+                lst[hour_idx]='00'
+            elif 12<int(lst[hour_idx])<=24:
+                lst[hour_idx]=str(int(lst[hour_idx].strip())-12)
+        if 0<=int(lst[hour_idx])<24:
+            hour_value=lst[hour_idx]
+        elif int(lst[hour_idx])==24:
+            hour_value='00'
+        else:
+            raise ValueError('Hours cannot be greater than 24 and less than 0!!!')
+    if 'M' not in order:
         minute_value='00'
     else:
-        raise ValueError('Minutes cannot be more than 60 and less than 0!!!')
-    if len(lst)==2:
+        minute_idx=order.index('M')
+        if 0<=int(lst[minute_idx])<60:
+            minute_value=lst[minute_idx]
+        elif int(lst[minute_idx])==60:
+            minute_value='00'
+        else:
+            raise ValueError('Minutes cannot be more than 60 and less than 0!!!')
+    if 'S' not in order:
         second_value='00'
     else:
         second_idx=order.index('S')
@@ -617,4 +695,30 @@ def make_time(value, *, order='HMS', current_time='now'):
             second_value='00'
         else:
             raise ValueError('Seconds cannot be greater than 60 and less than 0!!!')
-    return f'{hour_value.zfill(2)}:{minute_value.zfill(2)}:{second_value.zfill(2)}'
+    result=f'{hour_value.zfill(2)}:{minute_value.zfill(2)}:{second_value.zfill(2)}'
+    result=work_timezone1(Timestamp(result), to_tz, from_tz)
+    return work_timezone2(result, keyword, to_tz, from_tz)
+
+def make_datetime(value, *, order_date='ymd', order_time='HMS', century=21, isfirsttime=False,
+                  start_sunday=False, start_zero=False, current_datetime='now', from_tz=None, to_tz=None):
+    value=value.lower().strip()
+    if any(i in value for i in dt_list):
+        return relative_datetime(value, 'datetime', current_datetime=current_datetime, from_tz=from_tz, to_tz=to_tz)
+    pattern1=r'\s*(?<![a-zA-Z])(?:a\.m|p\.m|am|pm)\.?(?![a-zA-Z])\s*|\s*[-/.,: ]\s*'
+    pattern2=r'\s*(?<![a-zA-Z])(?:a\.m|p\.m|am|pm)\.?(?![a-zA-Z])'
+    lst=re.split(pattern1, value)
+    lst=[i.strip() for i in lst if i!='']
+    special_symbol=re.findall(pattern2, value)[:1]
+    special_symbol=''.join(special_symbol).strip()
+    part1, part2='', ''
+    if isfirsttime is False:
+        part1=make_date(lst[:len(order_date)], order=order_date, century=century, start_sunday=start_sunday, start_zero=start_zero)
+        if lst[len(order_date):]!=[]:
+            part2=make_time(lst[len(order_date):]+[special_symbol], order=order_time)
+    else:
+        if lst[len(order_time):]!=[]:
+            part1=make_date(lst[len(order_time):], order=order_date, century=century, start_sunday=start_sunday, start_zero=start_zero)
+        part2=make_time(lst[:len(order_time)]+[special_symbol], order=order_time)
+    result=f'{part1} {part2}'.strip()
+    result=work_timezone1(Timestamp(result), to_tz, from_tz)
+    return work_timezone2(result, 'datetime', to_tz, from_tz)
