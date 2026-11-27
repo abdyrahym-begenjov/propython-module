@@ -1,7 +1,7 @@
-# propython-module
+# ultrapython-module
 ## English
-## ProPython: Utilities of Files, Databases, and Math 🐍
-ProPython is a simple and helpful Python library. It helps you work with different files, connect to databases, and do math operations without writing long code. It is great for automating your daily programming tasks.
+## UltraPython: Utilities of Files, Databases, and Math 🐍
+UltraPython is a simple and helpful Python library. It helps you work with different files, connect to databases, and do math operations without writing long code. It is great for automating your daily programming tasks.
 > **Note:** This library requires Python 3.10+ because it uses the modern match-case feature.
 
 ## Key Features
@@ -104,21 +104,26 @@ ProPython is a simple and helpful Python library. It helps you work with differe
   * Returns `None` if there are no real roots, one number if there is one root, or a tuple `(x1, x2)` if there are two roots.
  
 ### `take_month(value)`
-
 * **Description:** Converts months from any format to a numeric value.
 * **Capabilities:** Supports Russian and English.
 
 ### `take_weekday(value, start_zero, start_sunday)`
-
 * **Description:** Converts weekdays from any format to a numeric value.
 * **Capabilities:**
 * Supports Russian and English.
 * Automatically handles different types of weekday indexing.
 
 ### `distributor(s)`
-
 * **Description:** A finite state machine that creates values from string elements in a list.
 * **Capabilities:** Distributes values by arrow and numeric type.
+
+### `work_timezone1(value, to_tz, from_tz)`
+* **Description:** Converts from one time zone to another and assigns the destination time zone to the result.
+* **Capabilities:** Supports many different time zones.
+
+### `work_timezone2(value, keyword, to_tz, from_tz)`
+* **Description:** Converts a datetime object to a string.
+* **Capabilities:** The result depends on the parameters and the specified datetime object type.
 
 ### `relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', from_tz=none, to_tz=none)` 
 * **Description:** Converts from relative string dates and times to a DateTime object.
@@ -127,7 +132,6 @@ ProPython is a simple and helpful Python library. It helps you work with differe
   * Many operations with relative dates and times.
 
  ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False)`
-
 * **Description:** Converts various forms of string dates to a datetime object.
 * **Capabilities:**
   * Supports Russian and English.
@@ -137,7 +141,6 @@ ProPython is a simple and helpful Python library. It helps you work with differe
   * Arrangement of year, month, day, day of the week, and week numbering.
 
 ### `make_time(value, *, order='HMS', current_time='now', from_tz=None, to_tz=None)`
-
 * **Description:** Converts various forms of string times to a time object.
 * **Capabilities:**
   * Supports Russian and English.
@@ -154,9 +157,9 @@ ProPython is a simple and helpful Python library. It helps you work with differe
   * Includes a lot of functionality, including internal functions Relative_DateTime, make_date, make_time, work_timezone1 and work_timezone2.
 
 ## Русский
-## Propython: утилиты файлов, баз данных и математики 🐍
+## UltraPython: утилиты файлов, баз данных и математики 🐍
 
-ProPython — это простая и полезная библиотека для Python. Она помогает работать с различными файлами, подключаться к базам данных и выполнять математические операции без написания длинного кода. Отлично подходит для автоматизации ваших повседневных задач программирования.
+UltraPython — это простая и полезная библиотека для Python. Она помогает работать с различными файлами, подключаться к базам данных и выполнять математические операции без написания длинного кода. Отлично подходит для автоматизации ваших повседневных задач программирования.
 
 > **Примечание:** Для работы библиотеки требуется Python 3.10+, так как в ней используется современный механизм сопоставления шаблонов (match-case).
 
@@ -172,7 +175,6 @@ ProPython — это простая и полезная библиотека д�
 ## Описание функций и их возможностей
 
 ### `pyread(filename, *, encoding='utf-8', as_list=False, **kwargs)`
-
 * **Описание:** Читает данные из файла. Автоматически определяет нужный формат по его расширению.
 * **Возможности:**
   * Работает с 6 популярными форматами: `.txt`, `.json`, `.pickle`, `.csv`, `.parquet` и `.xlsx`.
@@ -181,7 +183,6 @@ ProPython — это простая и полезная библиотека д�
   * Пробрасывает дополнительные параметры (`**kwargs`) во внутренние методы `pandas`.
 
 ### `pyrewrite(filename, value, *, encoding='utf-8', sheet_name=None, ...)`
-
 * **Описание:** Полностью удаляет старое содержимое файла и записывает в него новые данные.
 * **Возможности:**
   * Поддерживает запись строк/списков в `.txt`, словарей в `.json`/`.pickle` и таблиц в `.csv`/`.parquet`/`.xlsx`.
@@ -190,7 +191,6 @@ ProPython — это простая и полезная библиотека д�
   * Сама выставляет форматы данных для ячеек Excel (текст, целые числа, дроби, даты и время).
 
 ### `pyadd(filename, value, *, encoding='utf-8', sheet_name=None, **kwargs)`
-
 * **Описание:** Добавляет новые данные в конец существующего файла без удаления старой информации.
 * **Возможности:**
   * В `.txt` файлах просто дописывает новые строки в самый конец.
@@ -198,7 +198,6 @@ ProPython — это простая и полезная библиотека д�
   * Для таблиц `.csv` и `.xlsx` автоматически разделяет и фильтрует аргументы чтения и записи, предотвращая ошибки.
 
 ### `pyupdate(d1, d2)`
-
 * **Описание:** Помощник для рекурсивного (глубокого) объединения двух словарей.
 * **Возможности:**
   * Если ключи в словарях совпадают, функция не перезаписывает данные, а объединяет их элементы в один общий список.
@@ -206,63 +205,54 @@ ProPython — это простая и полезная библиотека д�
   * Поддерживает слияние вложенных словарей на любой глубине.
 
 ### `make_sqlengine(db_name, db_user=None, db_password=None, db_host='localhost', db_port=5432, db_type='postgres')`
-
 * **Описание:** Создает объект подключения (engine) к базе данных через SQLAlchemy.
 * **Возможности:**
   * Поддерживает 3 популярные СУБД: PostgreSQL/Postgres, MySQL и SQLite.
   * Сама собирает правильную строку подключения, избавляя вас от необходимости писать её вручную.
 
 ### `sqlread(query, db_name, **kwargs)`
-
 * **Описание:** Выполняет SQL-запрос и возвращает полученную таблицу в виде `pandas.DataFrame`.
 * **Возможности:**
   * Сама открывает и закрывает соединение с базой данных «под капотом».
   * Принимает все те же настройки подключения, что и `make_sqlengine`.
 
 ### `sqlrewrite(table_name, new_value, db_name, ..., chunksize=50000, **kwargs)`
-
 * **Описание:** Полностью удаляет старую таблицу в базе данных и записывает на её место новый DataFrame.
 * **Возможности:**
   * Загружает данные небольшими частями (chunks), что защищает оперативную память компьютера от перегрузки.
   * Использует быстрый метод `multi` для ускоренной пакетной вставки строк в БД.
 
 ### `sqladd(table_name, new_value, db_name, ..., chunksize=50000, **kwargs)`
-
 * **Описание:** Добавляет новые строки из DataFrame в конец существующей таблицы в базе данных.
 * **Возможности:**
   * Никогда не удаляет старые данные в БД, только дописывает новые.
   * Использует ту же производительную систему разбивки на чанки, что и `sqlrewrite`.
 
 ### `transform_from_sql(filepath, query, db_name, **kwargs)`
-
 * **Описание:** Берет данные из базы данных по SQL-запросу и сохраняет их напрямую в файл.
 * **Возможности:**
   * Экспортирует таблицы из БД в файлы `.csv`, `.parquet` или стилизованный `.xlsx` одной строчкой кода.
   * Сама подбирает корректные параметры записи в зависимости от выбранного расширения файла.
 
 ### `transform_to_sql(filepath, table_name, db_name, **kwargs)`
-
 * **Описание:** Читает данные из файла и сразу загружает их в таблицу базы данных.
 * **Возможности:**
   * Автоматически объединяет логику функций `pyread` и `sqlrewrite`.
   * Самостоятельно связывает параметры чтения файлов с правилами записи в SQL.
 
 ### `onelist(lst)`
-
 * **Описание:** Принимает сложную вложенную коллекцию и превращает её в один плоский простой список.
 * **Возможности:**
   * Использует рекурсию, позволяя разбирать структуры любой глубины вложенности.
   * Успешно извлекает элементы из `list`, `tuple`, `set`, `frozenset` и `deque`.
 
 ### `super_round(value, num=0)`
-
 * **Описание:** Округляет числа по стандартным школьным правилам математики (где 0.5 всегда округляется в большую сторону от нуля).
 * **Возможности:**
   * Позволяет обойти встроенное в Python «банковское округление» (к ближайшему четному) для получения предсказуемых результатов.
   * Использует строковые срезы и развороты списков для точного разбора долей числа.
 
 ### `root(number, base=2, precision=2)`
-
 * **Описание:** Находит корень числа любой степени и округляет итоговый результат.
 * **Возможности:**
   * Считает квадратные, кубические и любые корни высших степеней.
@@ -270,38 +260,40 @@ ProPython — это простая и полезная библиотека д�
   * Финально обрабатывает результат через `super_round`.
 
 ### `quadratic_equation(a, b=0, c=0)`
-
 * **Описание:** Решает стандартные квадратные уравнения (ax² + bx + c = 0).
 * **Возможности:**
   * Безопасно обрабатывает линейные случаи, если коэффициенты `a` или `b` равны нулю.
   * Возвращает `None`, если вещественных корней нет, одно число при единственном корне или кортеж `(x1, x2)`, если корней два.
 
 ### `take_month(value)`
-
 * **Описание:** Преобразовывает из любых форматов месяцев в числовом виде.
 * **Возможности:** Поддерживает русский и английский языки.
 
 ### `take_weekday(value, start_zero, start_sunday)`
-
 * **Описание:** Преобразует дни недели из любого формата в числовое значение.
 * **Возможности:**
   * Поддерживает русский и английский языки.
   * Автоматически обрабатывает различные типы индексации дней недели.
 
 ### `distributor(s)`
-
 * **Описание:** Конечный автомат, который создаёт значения из элементов строки в список.
 * **Возможности:** Распределяет значения по стрелковому и числовому виду.
 
-### `relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', from_tz=None, to_tz=None)`
+### `work_timezone1(value, to_tz, from_tz)`
+* **Описание:** Переводит из одного часового пояса в другой и присваивает в конце результата конечный часовой пояс.
+* **Возможности:** Поддерживает множество различных часовых поясов.
 
+### `work_timezone2(value, keyword, to_tz, from_tz)`
+* **Описание:** Преобразовывает из datetime объекта в строковой тип.
+* **Возможности:** Результат зависит от параметров и определённого вида datetime объекта.
+
+### `relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', from_tz=None, to_tz=None)`
 * **Описание:** Преобразовывает из относительных строковых дат и времён в объект datetime.
 * **Возможности:**
   * Поддерживает русский и английский языки.
   * Множество операций с относительными датами и временами.
 
 ### `make_date(value, *, order='ymd', current_date='now', century=21, start_sunday=False, start_zero=False)`
-
 * **Описание:** Преобразовывает из различных форм строковых дат в объект datetime.
 * **Возможности:**
   * Поддерживает русский и английский языки.
@@ -311,7 +303,6 @@ ProPython — это простая и полезная библиотека д�
   * Расстановка положений года, месяца, дня, дня недели и нумерации недель.
 
 ### `make_time(value, *, order='HMS', current_time='now', from_tz=None, to_tz=None)`
-
 * **Описание:** Преобразовывает из различных форм строковых времён в объект time.
 * **Возможности:**
   * Поддерживает русский и английский языки.
