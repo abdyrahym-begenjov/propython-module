@@ -452,19 +452,19 @@ def take_month(value):
 def take_weekday(value, start_zero, start_sunday):
     numweek_list=['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
                   '01', '02', '03', '04', '05', '06', '07', '08', '09']
-    if value in ('monday', 'mon', 'mo', 'понедельник', 'пон', 'пн', '01', '1'):
+    if value.startswith(('monday', 'mon', 'mo', 'понедельник', 'пон', 'пн', '01', '1')):
         result=1
-    elif value in ('tuesday', 'tue', 'tu', 'вторник', 'вто', 'вт', '02', '2'):
+    elif value.startswith(('tuesday', 'tue', 'tu', 'вторник', 'вто', 'вт', '02', '2')):
         result=2
-    elif value in ('wednesday', 'wed', 'we', 'среда', 'сре', 'ср', '03', '3'):
+    elif value.startswith(('wednesday', 'wed', 'we', 'среда', 'сре', 'ср', '03', '3')):
         result=3
-    elif value in ('thursday', 'thu', 'th', 'четверг', 'чет', 'чт', '04', '4'):
+    elif value.startswith(('thursday', 'thu', 'th', 'четверг', 'чет', 'чт', '04', '4')):
         result=4
-    elif value in ('friday', 'fri', 'fr', 'пятница', 'пят', 'пт', '05', '5'):
+    elif value.startswith(('friday', 'fri', 'fr', 'пятница', 'пят', 'пт', '05', '5')):
         result=5
-    elif value in ('saturday', 'sat', 'sa', 'суббота', 'суб', 'сб', '06', '6'):
+    elif value.startswith(('saturday', 'sat', 'sa', 'суббота', 'суб', 'сб', '06', '6')):
         result=6
-    elif value in ('sunday', 'sun', 'su', 'воскресенье', 'вос', 'вс', '07', '7'):
+    elif value.startswith(('sunday', 'sun', 'su', 'воскресенье', 'вос', 'вс', '07', '7')):
         result=7
     else:
         raise ValueError('The entered day of the week does not exist!!!')
@@ -522,12 +522,14 @@ def work_timezone2(value, keyword, to_tz, from_tz):
     return value.strip()
 
 dt_list={'yesterday', 'the day before yesterday', 'tomorrow', 'the day after tomorrow', 'today', 'now', 'ago', 
-         'in', 'half an hour ago', 'in half an hour', 'an hour and a half ago', 'in an hour and a half',
-         'вчера', 'позавчера', 'завтра', 'послезавтра', 'сегодня', 'сейчас', 'назад', 'через',
-         'полчаса назад', 'через полчаса', 'полтора часа назад', 'через полтора часа'}
+         'in', 'half an hour ago', 'in half an hour', 'an hour and a half ago', 'in an hour and a half', 'next',
+         'last', 'this', 'вчера', 'позавчера', 'завтра', 'послезавтра', 'сегодня', 'сейчас', 'назад', 'через',
+         'полчаса назад', 'через полчаса', 'полтора часа назад', 'через полтора часа', 'следующ', 'прошл',
+         'предыдущ', 'эт'}
 
 def relative_datetime(value, keyword, *, current_date='now', current_time='now', current_datetime='now', 
              from_tz=None, to_tz=None):
+    value=value.lower()
     if keyword=='date':
         current=Timestamp(current_date)
     elif keyword=='time':
@@ -554,41 +556,72 @@ def relative_datetime(value, keyword, *, current_date='now', current_time='now',
         result=current+DateOffset(minutes=90)
     else:
         value=value.split()
-        if value[-1] in ('ago', 'назад'):
-            if value[0] in ('a', 'an'):
-                value[0]='1'
-            elif len(value)==2:
-                value.insert(0, '1')
-            word=''.join(value[:-1])
+        value=[i for i in value if i not in {'в', 'на', 'к', 'со'}]
+        if value[0].startswith(('next', 'следующ')):
+            if value[-1].startswith(('year', 'год')):
+                result=current+DateOffset(years=1)
+            elif value[-1].startswith(('month', 'месяц')):
+                result=current+DateOffset(months=1)
+            elif value[-1].startswith(('week', 'недел')):
+                result=current+DateOffset(weeks=1)
+            else:
+                current_day=current.dayofweek+1
+                next_day=take_weekday(value[-1], False, False)
+                result=current+DateOffset(days=7+(next_day-current_day))
+        elif value[0].startswith(('last', 'прошл', 'предыдущ')):
+            if value[-1].startswith(('year', 'год')):
+                result=current-DateOffset(years=1)
+            elif value[-1].startswith(('month', 'месяц')):
+                result=current-DateOffset(months=1)
+            elif value[-1].startswith(('week', 'недел')):
+                result=current-DateOffset(weeks=1)
+            else:
+                current_day=current.dayofweek+1
+                next_day=take_weekday(value[-1], False, False)
+                result=current-DateOffset(days=7-(next_day-current_day))
+        elif value[0].startswith(('this', 'эт')):
+            if value[-1].startswith(('year', 'month', 'week', 'год', 'месяц', 'недел')):
+                result=current
+            else:
+                current_day=current.dayofweek+1
+                next_day=take_weekday(value[-1], False, False)
+                result=current-DateOffset(days=current_day-next_day)
         else:
-            if value[1] in ('a', 'an'):
-                value[1]='1'
-            elif len(value)==2:
-                value.insert(1, '1')
-            word=''.join(value[1:])
-        years, weeks, months, days, hours, minutes, seconds=0, 0, 0, 0, 0, 0, 0
-        distrub_list=distributor(word)
-        for i in range(0, len(distrub_list), 2):
-            if any(x==distrub_list[i+1] for x in ['day', 'days', 'день', 'дня', 'дней']):
-                days+=int(distrub_list[i])
-            if any(x==distrub_list[i+1] for x in ['week', 'weeks', 'неделю', 'недель', 'недели']):
-                weeks+=int(distrub_list[i])
-            if any(x==distrub_list[i+1] for x in ['month', 'months', 'месяц', 'месяца', 'месяцев']):
-                months+=int(distrub_list[i])
-            if any(x==distrub_list[i+1] for x in ['year', 'years', 'год', 'года', 'лет']):
-                years+=int(distrub_list[i])
-            if any(x==distrub_list[i+1] for x in ['h', 'hour', 'hours', 'ч', 'час', 'часа', 'часов']):
-                hours+=int(distrub_list[i])
-            if any(x==distrub_list[i+1] for x in ['m', 'min', 'minute', 'minutes', 'м', 'мин', 'минут', 'минуту']):
-                minutes+=int(distrub_list[i])
-            if any(x==distrub_list[i+1] for x in ['s', 'sec', 'second', 'seconds', 'с', 'сек', 'секунд', 'секунду']):
-                seconds+=int(distrub_list[i])
-        offset=DateOffset(years=years, weeks=weeks, months=months, days=days, 
+            if value[-1] in ('ago', 'назад'):
+                if value[0] in ('a', 'an'):
+                    value[0]='1'
+                elif len(value)==2:
+                    value.insert(0, '1')
+                word=''.join(value[:-1])
+            else:
+                if value[1] in ('a', 'an'):
+                    value[1]='1'
+                elif len(value)==2:
+                    value.insert(1, '1')
+                word=''.join(value[1:])
+            years, weeks, months, days, hours, minutes, seconds=0, 0, 0, 0, 0, 0, 0
+            distrub_list=distributor(word)
+            for i in range(0, len(distrub_list), 2):
+                if any(x==distrub_list[i+1] for x in ['day', 'days', 'день', 'дня', 'дней']):
+                    days+=int(distrub_list[i])
+                if any(x==distrub_list[i+1] for x in ['week', 'weeks', 'неделю', 'недель', 'недели']):
+                    weeks+=int(distrub_list[i])
+                if any(x==distrub_list[i+1] for x in ['month', 'months', 'месяц', 'месяца', 'месяцев']):
+                    months+=int(distrub_list[i])
+                if any(x==distrub_list[i+1] for x in ['year', 'years', 'год', 'года', 'лет']):
+                    years+=int(distrub_list[i])
+                if any(x==distrub_list[i+1] for x in ['h', 'hour', 'hours', 'ч', 'час', 'часа', 'часов']):
+                    hours+=int(distrub_list[i])
+                if any(x==distrub_list[i+1] for x in ['m', 'min', 'minute', 'minutes', 'м', 'мин', 'минут', 'минуту']):
+                    minutes+=int(distrub_list[i])
+                if any(x==distrub_list[i+1] for x in ['s', 'sec', 'second', 'seconds', 'с', 'сек', 'секунд', 'секунду']):
+                    seconds+=int(distrub_list[i])
+            offset=DateOffset(years=years, weeks=weeks, months=months, days=days, 
                           hours=hours, minutes=minutes, seconds=seconds)
-        if value[-1] in ('ago', 'назад'):
-            result=current-offset
-        elif value[0] in ('in', 'через'):
-            result=current+offset
+            if value[-1] in ('ago', 'назад'):
+                result=current-offset
+            elif value[0] in ('in', 'через'):
+                result=current+offset
     if keyword=='date':
         return result.strftime('%Y-%m-%d')
     return work_timezone2(result, keyword, to_tz, from_tz)
