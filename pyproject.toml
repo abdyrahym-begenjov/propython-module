@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ultrapython-module"
+name = "UltraPython"
 version = "1.8.5"
 authors = [
   { name="Abdyrahym Begenjov" },
